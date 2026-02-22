@@ -287,17 +287,126 @@ function renderOverall() {
         });
     });
 
+    // 반별 평균 점수 (반 평균 표시용)
+    const classScoreAvgData = classes.map(c => {
+        const clsStudents = students.filter(s => s.info.class == c);
+        const avg = clsStudents.reduce((sum, s) => {
+            return sum + (metric === 'raw' ? s.totalRaw : (metric === 'std' ? s.totalStd : s.totalPct));
+        }, 0) / clsStudents.length;
+        return { x: Number(c), y: parseFloat(avg.toFixed(1)), r: 12, name: `${c}반 평균` };
+    });
+
     if (state.charts.bubble) state.charts.bubble.destroy();
     state.charts.bubble = new Chart(document.getElementById('bubbleChart'), {
         type: 'bubble',
-        data: { datasets: [{ data: bubbleData, backgroundColor: bubbleData.map(d => d.bg), borderColor: 'transparent' }] },
+        data: {
+            datasets: [
+                { label: '학생', data: bubbleData, backgroundColor: bubbleData.map(d => d.bg), borderColor: 'transparent' },
+                { label: '반 평균', data: classScoreAvgData, backgroundColor: 'rgba(80, 80, 220, 0.85)', borderColor: 'rgba(50, 50, 180, 1)', borderWidth: 1.5 }
+            ]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
                 x: { min: 0, max: maxClass + 1, ticks: { stepSize: 1, callback: v => (Number.isInteger(v) && v > 0 && v <= maxClass) ? v + "반" : "" } },
                 y: { title: { display: true, text: metric === 'raw' ? '원점수 합' : (metric === 'std' ? '표준점수 합' : '백분위 합') } }
             },
-            plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: { callbacks: { label: c => `${c.raw.x}반 ${c.raw.name}: ${c.raw.y.toFixed(1)}` } } }
+            plugins: {
+                legend: { display: true, position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
+                datalabels: { display: false },
+                tooltip: { callbacks: { label: c => c.datasetIndex === 1 ? `${c.raw.name}: ${c.raw.y}` : `${c.raw.x}반 ${c.raw.name}: ${c.raw.y.toFixed(1)}` } }
+            }
+        }
+    });
+
+    // ── 반별 평균등급 버블 차트 ──
+    // 과목별 평균등급 = (국어+수학+영어+(탐구1+탐구2)/2) / 4
+    const getAvgGradeVal = s => (s.kor.grd + s.math.grd + s.eng.grd + (s.inq1.grd + s.inq2.grd) / 2) / 4;
+
+    const gradeBubbleData = [];
+    classes.forEach(c => {
+        const clsStudents = students.filter(s => s.info.class == c)
+            .sort((a, b) => getAvgGradeVal(a) - getAvgGradeVal(b)); // 등급은 낮을수록 좋으므로 오름차순
+        clsStudents.forEach((s, idx) => {
+            const avgGrd = getAvgGradeVal(s);
+            // 반 내 석차 기반 그라데이션 (성적 버블과 동일: 1등=초록, 꼴등=빨강)
+            const ratio = idx / (clsStudents.length - 1 || 1);
+            const r = ratio < 0.5 ? Math.floor(255 * (ratio * 2)) : 255;
+            const g = ratio < 0.5 ? 255 : Math.floor(255 * (2 - ratio * 2));
+            gradeBubbleData.push({
+                x: Number(c),
+                y: parseFloat(avgGrd.toFixed(2)),
+                r: 8,
+                bg: `rgba(${r}, ${g}, 0, 0.8)`,
+                name: s.info.name
+            });
+        });
+    });
+
+    // 반별 평균등급 평균값 (반 평균 표시용 점)
+    const classAvgData = classes.map(c => {
+        const clsStudents = students.filter(s => s.info.class == c);
+        const avg = clsStudents.reduce((sum, s) => sum + getAvgGradeVal(s), 0) / clsStudents.length;
+        return { x: Number(c), y: parseFloat(avg.toFixed(2)), r: 12, name: `${c}반 평균` };
+    });
+
+    if (state.charts.gradesBubble) state.charts.gradesBubble.destroy();
+    state.charts.gradesBubble = new Chart(document.getElementById('gradesBubbleChart'), {
+        type: 'bubble',
+        data: {
+            datasets: [
+                {
+                    label: '학생',
+                    data: gradeBubbleData,
+                    backgroundColor: gradeBubbleData.map(d => d.bg),
+                    borderColor: 'transparent'
+                },
+                {
+                    label: '반 평균',
+                    data: classAvgData,
+                    backgroundColor: 'rgba(80, 80, 220, 0.85)',
+                    borderColor: 'rgba(50, 50, 180, 1)',
+                    borderWidth: 1.5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    min: 0,
+                    max: maxClass + 1,
+                    ticks: { stepSize: 1, callback: v => (Number.isInteger(v) && v > 0 && v <= maxClass) ? v + "반" : "" }
+                },
+                y: {
+                    reverse: true,   // 1등급이 위에 오도록
+                    min: 0,          // 0까지 그려서 1등급 버블이 꼭대기에 안 붙도록
+                    max: 9.5,
+                    ticks: {
+                        stepSize: 1,
+                        callback: v => (Number.isInteger(v) && v >= 1 && v <= 9) ? v + "등급" : ""
+                        // v===0 은 빈 문자열 → 레이블 숨김
+                    },
+                    title: { display: true, text: '평균등급' }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
+                },
+                datalabels: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: c => {
+                            if (c.datasetIndex === 1) return `${c.raw.name}: ${c.raw.y}등급`;
+                            return `${c.raw.x}반 ${c.raw.name}: ${c.raw.y}등급`;
+                        }
+                    }
+                }
+            }
         }
     });
 
