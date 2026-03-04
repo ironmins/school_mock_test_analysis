@@ -73,6 +73,8 @@
             <div id="overall-tab" class="tab-content active">
                 <div class="control-panel">
                     <div class="control-left">
+                        <label class="control-label"><i class="fas fa-graduation-cap"></i> 학년:</label>
+                        <select id="gradeSelectTotal" class="selector"></select>
                         <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
                         <select id="examSelectTotal" class="selector"></select>
                     </div>
@@ -95,9 +97,8 @@
                 </div>
 
                 <h3 class="section-title"><i class="fas fa-th-large"></i> 과목별 종합 분석 (등급분포)</h3>
-                <div id="combinedStatsContainer" class="subject-grid"></div>
+                <div id="combinedStatsContainer"></div>
 
-                <!-- 과목별 등급 구간 학생 조회 -->
                 <h3 class="section-title"><i class="fas fa-filter"></i> 과목별 등급 구간 학생 조회</h3>
                 <div class="chart-card">
                     <div class="grade-filter-panel">
@@ -121,22 +122,8 @@
                 <div class="chart-card">
                     <h3><i class="fas fa-list-ol"></i> 전체 성적 일람표 (총점순)</h3>
                     <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th rowspan="2">석차</th>
-                                    <th rowspan="2">학번</th>
-                                    <th rowspan="2">이름</th>
-                                    <th colspan="2">국어</th><th colspan="2">수학</th><th colspan="2">영어</th>
-                                    <th colspan="2">한국사</th><th colspan="2">사회탐구</th><th colspan="2">과학탐구</th>
-                                    <th rowspan="2" class="total-col">총점</th>
-                                    <th rowspan="2" class="total-col">평균등급</th>
-                                </tr>
-                                <tr>
-                                    <th>점수</th><th>등급</th><th>점수</th><th>등급</th><th>점수</th><th>등급</th>
-                                    <th>점수</th><th>등급</th><th>점수</th><th>등급</th><th>점수</th><th>등급</th>
-                                </tr>
-                            </thead>
+                        <table class="data-table" id="totalTable">
+                            <thead id="totalTableHead"></thead>
                             <tbody id="totalTableBody"></tbody>
                         </table>
                     </div>
@@ -146,7 +133,11 @@
             <div id="class-tab" class="tab-content">
                 <div class="control-panel">
                     <div class="control-left">
+                        <label class="control-label"><i class="fas fa-graduation-cap"></i> 학년:</label>
+                        <select id="gradeSelectClass" class="selector"></select>
+                        <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
                         <select id="examSelectClass" class="selector"></select>
+                        <label class="control-label"><i class="fas fa-door-open"></i> 반:</label>
                         <select id="classSelect" class="selector"></select>
                     </div>
                     <div class="control-right">
@@ -160,20 +151,13 @@
                 </div>
 
                 <h3 class="section-title"><i class="fas fa-th-large"></i> 학급 과목별 종합 분석 (등급분포)</h3>
-                <div id="classStatsContainer" class="subject-grid"></div>
+                <div id="classStatsContainer"></div>
 
                 <div class="chart-card">
                     <h3><i class="fas fa-list-ol"></i> 학급 성적 일람표</h3>
                     <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>번호</th><th>이름</th>
-                                    <th>국어</th><th>등급</th><th>수학</th><th>등급</th><th>영어</th><th>등급</th>
-                                    <th>한국사</th><th>등급</th><th>사회탐구</th><th>등급</th><th>과학탐구</th><th>등급</th>
-                                    <th class="total-col">총점</th><th class="total-col">석차</th><th class="total-col">평균등급</th>
-                                </tr>
-                            </thead>
+                        <table class="data-table" id="classTable">
+                            <thead id="classTableHead"></thead>
                             <tbody id="classTableBody"></tbody>
                         </table>
                     </div>
@@ -183,12 +167,14 @@
             <div id="individual-tab" class="tab-content">
                 <div class="control-panel non-printable">
                     <div class="control-left">
-                        <label class="control-label">학급:</label>
+                        <label class="control-label"><i class="fas fa-graduation-cap"></i> 학년:</label>
+                        <select id="gradeSelectIndiv" class="selector"></select>
+                        <label class="control-label"><i class="fas fa-door-open"></i> 학급:</label>
                         <select id="indivClassSelect" class="selector"></select>
-                        <label class="control-label">학생:</label>
+                        <label class="control-label"><i class="fas fa-user"></i> 학생:</label>
                         <select id="indivStudentSelect" class="selector student-select"></select>
                         <span class="divider"></span>
-                        <label class="control-label">시험 선택:</label>
+                        <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
                         <select id="indivExamSelect" class="selector"></select>
                     </div>
                     <div class="control-right">
