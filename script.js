@@ -16,7 +16,8 @@ const state = {
     classMetric: 'raw',
     classSort: 'no',
     charts: {},
-    subjectCharts: []
+    subjectCharts: [],
+    uploadedFiles: []
 };
 
 Object.defineProperty(state, 'exams', {
@@ -29,7 +30,7 @@ Object.defineProperty(state, 'exams', {
 /* ── 탐구 선택과목 분류 ── */
 const socialSubjects = [
     '생활과 윤리', '윤리와 사상', '한국 지리', '세계 지리',
-    '동아시아사', '세계사', '정치와 법', '사회·문화', '사회문화',
+    '동아시아사', '세계사', '경제', '정치와 법', '사회·문화', '사회문화',
     '통합사회', '사회'
 ];
 const scienceSubjects = [
@@ -73,11 +74,13 @@ function initializeEventListeners() {
 
     if (fileInput) {
         fileInput.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length > 0) {
-                displayFileList(files);
+            const newFiles = Array.from(e.target.files);
+            if (newFiles.length > 0) {
+                addFiles(newFiles);
                 if (analyzeBtn) analyzeBtn.disabled = false;
             }
+            // input 초기화 (같은 파일 재선택 가능하도록)
+            fileInput.value = '';
         });
     }
 
@@ -100,11 +103,8 @@ function initializeEventListeners() {
             const dropped = Array.from(ev.dataTransfer?.files || []);
             const files = dropped.filter(f => /\.(xlsx|xls|csv|xlsm)$/i.test(f.name));
             if (files.length > 0) {
-                displayFileList(files);
+                addFiles(files);
                 if (analyzeBtn) analyzeBtn.disabled = false;
-                const dt = new DataTransfer();
-                files.forEach(f => dt.items.add(f));
-                if (fileInput) fileInput.files = dt.files;
             }
         });
     }
@@ -190,14 +190,80 @@ function updateGradeSelectors() {
     state.currentGradeIndiv = grades[0];
 }
 
-function displayFileList(files) {
+/* ── 파일 누적 추가 (중복 방지) ── */
+function addFiles(newFiles) {
+    newFiles.forEach(file => {
+        // 같은 이름 + 같은 크기의 파일은 중복으로 판단하여 스킵
+        const isDuplicate = state.uploadedFiles.some(
+            f => f.name === file.name && f.size === file.size
+        );
+        if (!isDuplicate) {
+            state.uploadedFiles.push(file);
+        }
+    });
+    renderFileList();
+}
+
+/* ── 개별 파일 삭제 ── */
+window.removeFile = function(index) {
+    state.uploadedFiles.splice(index, 1);
+    renderFileList();
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    if (analyzeBtn) {
+        analyzeBtn.disabled = state.uploadedFiles.length === 0;
+    }
+};
+
+/* ── 전체 파일 삭제 ── */
+window.clearAllFiles = function() {
+    state.uploadedFiles = [];
+    renderFileList();
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    if (analyzeBtn) analyzeBtn.disabled = true;
+};
+
+/* ── 파일 목록 렌더링 ── */
+function renderFileList() {
     const fileList = document.getElementById('fileList');
     if (!fileList) return;
-    fileList.innerHTML = '<h4><i class="fas fa-file-alt"></i> 선택된 파일:</h4>';
-    const ul = document.createElement('ul');
-    files.forEach(file => { const li = document.createElement('li'); li.textContent = file.name; ul.appendChild(li); });
-    fileList.appendChild(ul);
+
+    if (state.uploadedFiles.length === 0) {
+        fileList.style.display = 'none';
+        fileList.innerHTML = '';
+        return;
+    }
+
     fileList.style.display = 'block';
+    fileList.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 style="margin:0;"><i class="fas fa-file-alt"></i> 업로드된 파일 (${state.uploadedFiles.length}개)</h4>
+            <button onclick="clearAllFiles()" 
+                style="background:#e74c3c; color:#fff; border:none; padding:4px 12px; 
+                       border-radius:4px; cursor:pointer; font-size:0.8rem;">
+                <i class="fas fa-trash-alt"></i> 전체 삭제
+            </button>
+        </div>
+        <ul style="list-style:none; padding:0; margin:0;">
+            ${state.uploadedFiles.map((file, idx) => `
+                <li style="display:flex; justify-content:space-between; align-items:center; 
+                           padding:6px 10px; margin-bottom:4px; background:rgba(0,0,0,0.03); 
+                           border-radius:6px; font-size:0.88rem;">
+                    <span>
+                        <i class="fas fa-file-excel" style="color:#27ae60; margin-right:6px;"></i>
+                        ${file.name}
+                        <span style="color:#999; font-size:0.75rem; margin-left:8px;">
+                            (${(file.size / 1024).toFixed(1)} KB)
+                        </span>
+                    </span>
+                    <button onclick="removeFile(${idx})" 
+                        style="background:none; border:none; color:#e74c3c; cursor:pointer; 
+                               font-size:1rem; padding:2px 6px;" title="삭제">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                </li>
+            `).join('')}
+        </ul>
+    `;
 }
 
 function showLoading(text = '분석 중...') {
@@ -209,8 +275,7 @@ function hideLoading() { document.getElementById('loading').style.display = 'non
 
 /* ── 파일 분석 ── */
 async function analyzeFiles() {
-    const fileInput = document.getElementById('fileInput');
-    const files = Array.from(fileInput.files);
+    const files = state.uploadedFiles;
     if (files.length === 0) return alert('파일을 선택해주세요.');
 
     showLoading();
@@ -898,118 +963,143 @@ function buildFilterSubjectRow(label, filterArea, filterChoice, counts, indented
 }
 
 window.renderGradeFilter = function(filterArea, gradeLevel, choiceFilter) {
-    // 활성 버튼 처리
-    document.querySelectorAll('.grade-filter-btn.active').forEach(b => b.classList.remove('active'));
-
-    // 단순모드에서는 g-btn-{key}-{grade} 클래스로 찾기
+    // 클릭한 버튼 찾기
+    let clickedBtn = null;
     const simpleBtnSelector = `.g-btn-${filterArea}-${gradeLevel}`;
     const simpleBtn = document.querySelector(simpleBtnSelector);
+
     if (simpleBtn) {
-        simpleBtn.classList.add('active');
+        clickedBtn = simpleBtn;
     } else {
         document.querySelectorAll('.grade-filter-btn').forEach(btn => {
             const oc = btn.getAttribute('onclick') || '';
             if (oc.includes(`'${filterArea}', ${gradeLevel}`) && oc.includes(`'${choiceFilter}'`)) {
-                btn.classList.add('active');
+                clickedBtn = btn;
             }
         });
     }
 
+    // 토글: 이미 활성화된 버튼이면 비활성화
+    if (clickedBtn && clickedBtn.classList.contains('active')) {
+        clickedBtn.classList.remove('active');
+    } else if (clickedBtn) {
+        clickedBtn.classList.add('active');
+    }
+
+    // 현재 활성화된 모든 버튼 수집
+    const activeButtons = document.querySelectorAll('.grade-filter-btn.active');
+
+    if (activeButtons.length === 0) {
+        // 활성 버튼이 없으면 결과 숨김
+        document.getElementById('gradeFilterResult').style.display = 'none';
+        document.getElementById('gradeFilterEmpty').style.display = 'none';
+        return;
+    }
+
+    // 활성 버튼에서 필터 조건 추출
+    const activeFilters = [];
+    activeButtons.forEach(btn => {
+        const oc = btn.getAttribute('onclick') || '';
+        const match = oc.match(/renderGradeFilter\x28'([^']+)',\s*(\d+),\s*'([^']+)'\x29/);
+        if (match) {
+            activeFilters.push({ area: match[1], grade: parseInt(match[2]), choice: match[3] });
+        }
+    });
+
+    if (activeFilters.length === 0) {
+        document.getElementById('gradeFilterResult').style.display = 'none';
+        document.getElementById('gradeFilterEmpty').style.display = 'none';
+        return;
+    }
+
+    // 학생 데이터 가져오기
     const currentGrade = state.currentGradeTotal || state.availableGrades[0];
     const exams = getExamsForGrade(currentGrade);
     const examSelect = document.getElementById('examSelectTotal');
     const examIdx = parseInt(examSelect.value) || 0;
     const students = exams[examIdx]?.students || [];
 
-    let filtered = [];
-    let isInquiry = filterArea.startsWith('inq_');
-    let displayLabel = '';
+    // 모든 활성 필터에 해당하는 결과 수집
+    const allRows = [];
+    const summaryParts = [];
 
-    if (isInquiry) {
-        // 탐구 통합 필터
-        const { socialGroup, scienceGroup, unknownGroup } = getInquiryMergedGroups(students);
-        let targetGroup = {};
-        let categoryName = '';
+    activeFilters.forEach(filter => {
+        const isInquiry = filter.area.startsWith('inq_');
 
-        if (filterArea === 'inq_social') {
-            targetGroup = socialGroup;
-            categoryName = '사회탐구 영역';
-        } else if (filterArea === 'inq_science') {
-            targetGroup = scienceGroup;
-            categoryName = '과학탐구 영역';
+        if (isInquiry) {
+            const { socialGroup, scienceGroup, unknownGroup } = getInquiryMergedGroups(students);
+            let targetGroup = {};
+            let categoryName = '';
+
+            if (filter.area === 'inq_social') {
+                targetGroup = socialGroup; categoryName = '사회탐구';
+            } else if (filter.area === 'inq_science') {
+                targetGroup = scienceGroup; categoryName = '과학탐구';
+            } else {
+                targetGroup = unknownGroup; categoryName = '탐구(기타)';
+            }
+
+            let entries = [];
+            if (filter.choice === 'all') {
+                entries = Object.values(targetGroup).flat();
+            } else {
+                entries = targetGroup[filter.choice] || [];
+            }
+
+            entries = entries.filter(e => e.grd === filter.grade);
+            entries.sort((a, b) => b.raw - a.raw);
+
+            const displayLabel = filter.choice === 'all' ? categoryName : `${categoryName}-${filter.choice}`;
+            if (entries.length > 0) {
+                summaryParts.push(`<strong>${displayLabel}</strong> <span class="grade-badge g-${filter.grade}">${filter.grade}등급</span> ${entries.length}명`);
+            }
+
+            entries.forEach(e => {
+                const s = e.student;
+                const id = `${s.info.grade}${String(s.info.class).padStart(2,'0')}${String(s.info.no).padStart(2,'0')}`;
+                const srcLabel = e.source === 'inq1' ? '탐구1' : '탐구2';
+                allRows.push({
+                    type: 'inquiry',
+                    id, name: s.info.name, subject: e.name || '-', src: srcLabel,
+                    raw: e.raw, grd: e.grd, std: e.std || '-', pct: e.pct || '-',
+                    filterLabel: displayLabel
+                });
+            });
         } else {
-            targetGroup = unknownGroup;
-            categoryName = '탐구 영역 (기타)';
+            const area = areas.find(a => a.k === filter.area);
+            const isAbs = (filter.area === 'eng' || filter.area === 'hist');
+
+            let filtered = students.filter(s => s[filter.area].grd === filter.grade);
+            if (filter.choice !== 'all') {
+                filtered = filtered.filter(s => (s[filter.area].name || '(미분류)') === filter.choice);
+            }
+            filtered.sort((a, b) => {
+                const diff = b[filter.area].raw - a[filter.area].raw;
+                return diff !== 0 ? diff : (a.info.class * 100 + a.info.no) - (b.info.class * 100 + b.info.no);
+            });
+
+            const displayLabel = filter.choice === 'all' ? area.n : `${area.n}-${filter.choice}`;
+            if (filtered.length > 0) {
+                summaryParts.push(`<strong>${displayLabel}</strong> <span class="grade-badge g-${filter.grade}">${filter.grade}등급</span> ${filtered.length}명`);
+            }
+
+            filtered.forEach(s => {
+                const sub = s[filter.area];
+                const id = `${s.info.grade}${String(s.info.class).padStart(2,'0')}${String(s.info.no).padStart(2,'0')}`;
+                allRows.push({
+                    type: 'normal',
+                    id, name: s.info.name,
+                    subject: area.hasChoice ? (sub.name || '-') : '',
+                    hasChoice: area.hasChoice,
+                    raw: sub.raw, grd: sub.grd,
+                    std: isAbs ? null : (sub.std || '-'),
+                    pct: isAbs ? null : (sub.pct || '-'),
+                    isAbs,
+                    filterLabel: displayLabel
+                });
+            });
         }
-
-        let entries = [];
-        if (choiceFilter === 'all') {
-            entries = Object.values(targetGroup).flat();
-            displayLabel = categoryName;
-        } else {
-            entries = targetGroup[choiceFilter] || [];
-            displayLabel = `${categoryName} - ${choiceFilter}`;
-        }
-
-        entries = entries.filter(e => e.grd === gradeLevel);
-        entries.sort((a, b) => b.raw - a.raw);
-
-        const resultEl = document.getElementById('gradeFilterResult');
-        const emptyEl = document.getElementById('gradeFilterEmpty');
-        const summaryEl = document.getElementById('gradeFilterSummary');
-        const theadEl = document.getElementById('gradeFilterThead');
-        const tbodyEl = document.getElementById('gradeFilterTbody');
-
-        if (entries.length === 0) {
-            resultEl.style.display = 'none';
-            emptyEl.style.display = 'flex';
-            return;
-        }
-        emptyEl.style.display = 'none';
-        resultEl.style.display = 'block';
-
-        summaryEl.innerHTML = `<span class="grade-filter-summary-text">
-            <strong>${displayLabel}</strong>
-            <span class="grade-badge g-${gradeLevel}">${gradeLevel}등급</span>
-            해당 학생 <strong>${entries.length}명</strong>
-        </span>`;
-
-        theadEl.innerHTML = `<tr>
-            <th>학번</th><th>이름</th><th>선택과목</th><th>영역</th><th>원점수</th><th>등급</th><th>표준점수</th><th>백분위</th>
-        </tr>`;
-
-        tbodyEl.innerHTML = entries.map(e => {
-            const s = e.student;
-            const id = `${s.info.grade}${String(s.info.class).padStart(2,'0')}${String(s.info.no).padStart(2,'0')}`;
-            const srcLabel = e.source === 'inq1' ? '탐구1' : '탐구2';
-            return `<tr>
-                <td>${id}</td>
-                <td style="font-weight:bold;">${s.info.name}</td>
-                <td style="font-size:0.8rem;color:var(--text-secondary);">${e.name || '-'}</td>
-                <td style="font-size:0.75rem;">${srcLabel}</td>
-                <td>${e.raw}</td>
-                <td class="g-${e.grd}">${e.grd}</td>
-                <td>${e.std || '-'}</td>
-                <td>${e.pct || '-'}</td>
-            </tr>`;
-        }).join('');
-        return;
-    }
-
-    // 일반 영역 (kor, math, eng, hist)
-    const area = areas.find(a => a.k === filterArea);
-    const isAbs = (filterArea === 'eng' || filterArea === 'hist');
-
-    filtered = students.filter(s => s[filterArea].grd === gradeLevel);
-    if (choiceFilter !== 'all') {
-        filtered = filtered.filter(s => (s[filterArea].name || '(미분류)') === choiceFilter);
-    }
-    filtered.sort((a, b) => {
-        const diff = b[filterArea].raw - a[filterArea].raw;
-        return diff !== 0 ? diff : (a.info.class * 100 + a.info.no) - (b.info.class * 100 + b.info.no);
     });
-
-    displayLabel = choiceFilter === 'all' ? area.n : `${area.n} - ${choiceFilter}`;
 
     const resultEl = document.getElementById('gradeFilterResult');
     const emptyEl = document.getElementById('gradeFilterEmpty');
@@ -1017,7 +1107,7 @@ window.renderGradeFilter = function(filterArea, gradeLevel, choiceFilter) {
     const theadEl = document.getElementById('gradeFilterThead');
     const tbodyEl = document.getElementById('gradeFilterTbody');
 
-    if (filtered.length === 0) {
+    if (allRows.length === 0) {
         resultEl.style.display = 'none';
         emptyEl.style.display = 'flex';
         return;
@@ -1025,29 +1115,159 @@ window.renderGradeFilter = function(filterArea, gradeLevel, choiceFilter) {
     emptyEl.style.display = 'none';
     resultEl.style.display = 'block';
 
+    const totalCount = allRows.length;
     summaryEl.innerHTML = `<span class="grade-filter-summary-text">
-        <strong>${displayLabel}</strong>
-        <span class="grade-badge g-${gradeLevel}">${gradeLevel}등급</span>
-        해당 학생 <strong>${filtered.length}명</strong>
+        ${summaryParts.join(' &nbsp;|&nbsp; ')}
+        &nbsp;&nbsp; 합계 <strong>${totalCount}명</strong>
     </span>`;
 
+    // 통합 테이블 헤더 (모든 컬럼 표시)
     theadEl.innerHTML = `<tr>
-        <th>학번</th><th>이름</th>${area.hasChoice ? '<th>선택과목</th>' : ''}<th>원점수</th><th>등급</th>
-        ${!isAbs ? '<th>표준점수</th><th>백분위</th>' : ''}
+        <th>조회조건</th><th>학번</th><th>이름</th><th>선택과목</th><th>원점수</th><th>등급</th><th>표준점수</th><th>백분위</th>
     </tr>`;
 
-    tbodyEl.innerHTML = filtered.map(s => {
-        const sub = s[filterArea];
-        const id = `${s.info.grade}${String(s.info.class).padStart(2,'0')}${String(s.info.no).padStart(2,'0')}`;
+    tbodyEl.innerHTML = allRows.map(r => {
         return `<tr>
-            <td>${id}</td>
-            <td style="font-weight:bold;">${s.info.name}</td>
-            ${area.hasChoice ? `<td style="font-size:0.8rem;color:var(--text-secondary);">${sub.name || '-'}</td>` : ''}
-            <td>${sub.raw}</td>
-            <td class="g-${sub.grd}">${sub.grd}</td>
-            ${!isAbs ? `<td>${sub.std || '-'}</td><td>${sub.pct || '-'}</td>` : ''}
+            <td style="font-size:0.75rem;color:var(--text-secondary);">${r.filterLabel}</td>
+            <td>${r.id}</td>
+            <td style="font-weight:bold;">${r.name}</td>
+            <td style="font-size:0.8rem;color:var(--text-secondary);">${r.subject || (r.type === 'inquiry' ? r.subject : '-')}</td>
+            <td>${r.raw}</td>
+            <td class="g-${r.grd}">${r.grd}</td>
+            <td>${r.std !== null ? r.std : '-'}</td>
+            <td>${r.pct !== null ? r.pct : '-'}</td>
         </tr>`;
     }).join('');
+};
+
+/* ── 등급 필터 결과 엑셀 저장 ── */
+window.exportGradeFilterToExcel = function() {
+    const thead = document.getElementById('gradeFilterThead');
+    const tbody = document.getElementById('gradeFilterTbody');
+    if (!thead || !tbody || tbody.rows.length === 0) {
+        return alert('저장할 데이터가 없습니다.');
+    }
+
+    const wb = XLSX.utils.book_new();
+    const rows = [];
+
+    // 헤더
+    const headerRow = [];
+    thead.querySelectorAll('tr').forEach(tr => {
+        tr.querySelectorAll('th').forEach(th => {
+            headerRow.push(th.textContent.trim());
+        });
+    });
+    rows.push(headerRow);
+
+    // 본문
+    tbody.querySelectorAll('tr').forEach(tr => {
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+            const val = td.textContent.trim();
+            const num = Number(val);
+            row.push(isNaN(num) || val === '' || val === '-' ? val : num);
+        });
+        rows.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // 열 너비 자동 조정
+    const colWidths = rows[0].map((_, colIdx) => {
+        let maxLen = 0;
+        rows.forEach(row => {
+            const cellLen = String(row[colIdx] || '').length;
+            if (cellLen > maxLen) maxLen = cellLen;
+        });
+        return { wch: Math.max(maxLen + 2, 8) };
+    });
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, '등급구간조회');
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    XLSX.writeFile(wb, `등급구간_학생조회_${dateStr}.xlsx`);
+};
+
+/* ── 전체 성적 일람표 엑셀 저장 ── */
+window.exportTotalTableToExcel = function() {
+    const thead = document.getElementById('totalTableHead');
+    const tbody = document.getElementById('totalTableBody');
+    if (!thead || !tbody || tbody.rows.length === 0) {
+        return alert('저장할 데이터가 없습니다.');
+    }
+
+    const wb = XLSX.utils.book_new();
+    const rows = [];
+
+    // 헤더 처리 (2행 병합 헤더 → 평탄화)
+    const headerRows = thead.querySelectorAll('tr');
+    if (headerRows.length === 2) {
+        // 1행과 2행을 합쳐서 단일 헤더 생성
+        const mergedHeader = [];
+        const row1Cells = headerRows[0].querySelectorAll('th');
+        const row2Cells = Array.from(headerRows[1].querySelectorAll('th'));
+        let row2Idx = 0;
+
+        row1Cells.forEach(th => {
+            const colspan = parseInt(th.getAttribute('colspan')) || 1;
+            const rowspan = parseInt(th.getAttribute('rowspan')) || 1;
+
+            if (rowspan === 2) {
+                // 2행 병합 셀: 그대로 추가
+                mergedHeader.push(th.textContent.trim());
+            } else if (colspan > 1) {
+                // colspan 셀: 2행의 하위 셀과 결합
+                const parentName = th.textContent.trim();
+                for (let i = 0; i < colspan && row2Idx < row2Cells.length; i++) {
+                    mergedHeader.push(`${parentName}_${row2Cells[row2Idx].textContent.trim()}`);
+                    row2Idx++;
+                }
+            } else {
+                mergedHeader.push(th.textContent.trim());
+            }
+        });
+        rows.push(mergedHeader);
+    } else {
+        // 단일 행 헤더
+        const headerRow = [];
+        headerRows[0].querySelectorAll('th').forEach(th => {
+            headerRow.push(th.textContent.trim());
+        });
+        rows.push(headerRow);
+    }
+
+    // 본문
+    tbody.querySelectorAll('tr').forEach(tr => {
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+            const val = td.textContent.trim();
+            const num = Number(val);
+            row.push(isNaN(num) || val === '' || val === '-' ? val : num);
+        });
+        rows.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // 열 너비 자동 조정
+    const colWidths = rows[0].map((_, colIdx) => {
+        let maxLen = 0;
+        rows.forEach(row => {
+            const cellLen = String(row[colIdx] || '').length;
+            if (cellLen > maxLen) maxLen = cellLen;
+        });
+        return { wch: Math.max(maxLen + 2, 8) };
+    });
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, '성적일람표');
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    XLSX.writeFile(wb, `전체성적일람표_${dateStr}.xlsx`);
 };
 
 /* ==============================
