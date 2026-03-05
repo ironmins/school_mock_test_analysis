@@ -1398,8 +1398,25 @@ function updateIndivList() {
     if (!clsVal) return;
     const cls = parseInt(clsVal);
     if (isNaN(cls)) return;
-    const list = exams[0].students.filter(s => s.info.class === cls).sort((a, b) => a.info.no - b.info.no);
-    document.getElementById('indivStudentSelect').innerHTML = list.map(s => `<option value="${s.uid}">${s.info.no}번 ${s.info.name}</option>`).join('');
+
+    // ★ 수정: 모든 시험에서 해당 반 학생을 수집 (중복 제거)
+    const studentMap = new Map();
+    exams.forEach(exam => {
+        exam.students
+            .filter(s => s.info.class === cls)
+            .forEach(s => {
+                if (!studentMap.has(s.uid)) {
+                    studentMap.set(s.uid, s);
+                }
+            });
+    });
+
+    const list = Array.from(studentMap.values())
+                      .sort((a, b) => a.info.no - b.info.no);
+
+    document.getElementById('indivStudentSelect').innerHTML =
+        list.map(s => `<option value="${s.uid}">${s.info.no}번 ${s.info.name}</option>`).join('');
+
     if (list.length > 0) renderIndividual();
 }
 
