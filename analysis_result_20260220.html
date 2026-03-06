@@ -2,7 +2,7 @@
 <html lang="ko"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026학년도 전주고등학교 모의고사 성적 분석 결과</title>
+    <title>고등학교 모의고사 성적 분석 프로그램</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -18,7 +18,8 @@
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-chart-pie"></i> 2026학년도 전주고등학교 모의고사 성적 분석 결과 <span class="badge-lite">Web</span></h1>
+            <h1><i class="fas fa-chart-pie"></i> 고등학교 모의고사 성적 분석 프로그램 <span class="badge-lite">Web</span></h1>
+            <p>대교협 양식 파일을 업로드하여 모의고사 성적을 분석합니다</p>
         </header>
 
         
@@ -1164,7 +1165,15 @@
                         <label class="control-label"><i class="fas fa-door-open"></i> 학급:</label>
                         <select id="indivClassSelect" class="selector"><option value="1">1반</option><option value="2">2반</option><option value="3">3반</option><option value="4">4반</option><option value="5">5반</option><option value="6">6반</option><option value="7">7반</option><option value="8">8반</option><option value="9">9반</option><option value="10">10반</option><option value="11">11반</option></select>
                         <label class="control-label"><i class="fas fa-user"></i> 학생:</label>
-                        <select id="indivStudentSelect" class="selector student-select"><option value="1-1-김태경">1번 김태경</option><option value="1-2-박상선">2번 박상선</option><option value="1-3-박윤성">3번 박윤성</option><option value="1-4-박지용">4번 박지용</option><option value="1-5-박현수">5번 박현수</option><option value="1-6-박형민">6번 박형민</option><option value="1-7-박효민">7번 박효민</option><option value="1-8-서준희">8번 서준희</option><option value="1-9-송강산">9번 송강산</option><option value="1-10-송현민">10번 송현민</option><option value="1-11-오시온">11번 오시온</option><option value="1-12-옹형준">12번 옹형준</option><option value="1-13-유지환">13번 유지환</option><option value="1-14-윤석이">14번 윤석이</option><option value="1-15-이성준">15번 이성준</option><option value="1-16-이우륜">16번 이우륜</option><option value="1-17-이지후">17번 이지후</option><option value="1-18-이하준">18번 이하준</option><option value="1-19-이현우">19번 이현우</option><option value="1-20-장원석">20번 장원석</option><option value="1-21-전수우">21번 전수우</option><option value="1-22-조현진">22번 조현진</option><option value="1-23-차주원">23번 차주원</option><option value="1-24-최시우">24번 최시우</option><option value="1-25-최진영">25번 최진영</option><option value="1-26-한민">26번 한민</option></select>
+                        <div class="student-search-wrapper" id="studentSearchWrapper">
+                            <div class="student-search-input-row">
+                                <i class="fas fa-search student-search-icon"></i>
+                                <input type="text" id="studentSearchInput" class="student-search-input" placeholder="이름 또는 번호 검색..." autocomplete="off">
+                                <button id="studentSearchClear" class="student-search-clear" style="display:none;" title="검색 초기화">×</button>
+                            </div>
+                            <select id="indivStudentSelect" class="selector student-select"><option value="1-1-김태경">1번 김태경</option><option value="1-2-박상선">2번 박상선</option><option value="1-3-박윤성">3번 박윤성</option><option value="1-4-박지용">4번 박지용</option><option value="1-5-박현수">5번 박현수</option><option value="1-6-박형민">6번 박형민</option><option value="1-7-박효민">7번 박효민</option><option value="1-8-서준희">8번 서준희</option><option value="1-9-송강산">9번 송강산</option><option value="1-10-송현민">10번 송현민</option><option value="1-11-오시온">11번 오시온</option><option value="1-12-옹형준">12번 옹형준</option><option value="1-13-유지환">13번 유지환</option><option value="1-14-윤석이">14번 윤석이</option><option value="1-15-이성준">15번 이성준</option><option value="1-16-이우륜">16번 이우륜</option><option value="1-17-이지후">17번 이지후</option><option value="1-18-이하준">18번 이하준</option><option value="1-19-이현우">19번 이현우</option><option value="1-20-장원석">20번 장원석</option><option value="1-21-전수우">21번 전수우</option><option value="1-22-조현진">22번 조현진</option><option value="1-23-차주원">23번 차주원</option><option value="1-24-최시우">24번 최시우</option><option value="1-25-최진영">25번 최진영</option><option value="1-26-한민">26번 한민</option></select>
+                            <div id="studentSearchDropdown" class="student-search-dropdown" style="display:none;"></div>
+                        </div>
                         <span class="divider"></span>
                         <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
                         <select id="indivExamSelect" class="selector"><option value="0">2025.10.(경기)</option><option value="1">2025.09.(인천)</option><option value="2">2025.06.(부산)</option><option value="3">2025.03.(서울)</option></select>
@@ -1300,7 +1309,7 @@
 
         <footer class="app-footer non-printable">
             <div class="footer-left">
-                <span id="lastUpdated" class="last-updated">Last updated: 2026-03-05 20:55 (KST)</span>
+                <span id="lastUpdated" class="last-updated">Last updated: 2026-03-06 16:04 (KST)</span>
             </div>
             <div class="footer-right">
                 <div class="credits">Made by IRONMIN (Jeonju high school)</div>
