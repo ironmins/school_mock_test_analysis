@@ -182,7 +182,17 @@
                         <label class="control-label"><i class="fas fa-door-open"></i> 학급:</label>
                         <select id="indivClassSelect" class="selector"></select>
                         <label class="control-label"><i class="fas fa-user"></i> 학생:</label>
-                        <select id="indivStudentSelect" class="selector student-select"></select>
+                        <div class="student-search-wrapper" id="studentSearchWrapper">
+                            <div class="student-search-input-row">
+                                <i class="fas fa-search student-search-icon"></i>
+                                <input type="text" id="studentSearchInput" class="student-search-input"
+                                       placeholder="이름 또는 번호 검색..." autocomplete="off" />
+                                <button id="studentSearchClear" class="student-search-clear" style="display:none;"
+                                        title="검색 초기화">&times;</button>
+                            </div>
+                            <select id="indivStudentSelect" class="selector student-select"></select>
+                            <div id="studentSearchDropdown" class="student-search-dropdown" style="display:none;"></div>
+                        </div>
                         <span class="divider"></span>
                         <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
                         <select id="indivExamSelect" class="selector"></select>

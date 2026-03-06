@@ -117,6 +117,8 @@ function initializeEventListeners() {
     document.getElementById('classSelect')?.addEventListener('change', renderClass);
     document.getElementById('indivClassSelect')?.addEventListener('change', updateIndivList);
     document.getElementById('indivStudentSelect')?.addEventListener('change', renderIndividual);
+    // ★ 학생 검색 기능 이벤트 등록
+    initStudentSearch();
     document.getElementById('indivExamSelect')?.addEventListener('change', renderIndividual);
     document.getElementById('pdfStudentBtn')?.addEventListener('click', generateStudentPDF);
     document.getElementById('pdfClassBtn')?.addEventListener('click', generateClassPDF);
@@ -1418,6 +1420,198 @@ function updateIndivList() {
         list.map(s => `<option value="${s.uid}">${s.info.no}번 ${s.info.name}</option>`).join('');
 
     if (list.length > 0) renderIndividual();
+}
+
+/* ============================================================
+   학생 검색 기능
+   ============================================================ */
+function initStudentSearch() {
+    const searchInput = document.getElementById('studentSearchInput');
+    const clearBtn = document.getElementById('studentSearchClear');
+    const dropdown = document.getElementById('studentSearchDropdown');
+
+    if (!searchInput) return;
+
+    let highlightIdx = -1;
+
+    // 입력 시 검색
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+        clearBtn.style.display = query ? 'block' : 'none';
+
+        if (query.length === 0) {
+            dropdown.style.display = 'none';
+            highlightIdx = -1;
+            return;
+        }
+
+        const results = searchStudents(query);
+        renderSearchDropdown(results, query);
+        highlightIdx = -1;
+    });
+
+    // 포커스 시 이미 텍스트가 있으면 드롭다운 표시
+    searchInput.addEventListener('focus', () => {
+        const query = searchInput.value.trim();
+        if (query.length > 0) {
+            const results = searchStudents(query);
+            renderSearchDropdown(results, query);
+        }
+    });
+
+    // 키보드 탐색
+    searchInput.addEventListener('keydown', (e) => {
+        const items = dropdown.querySelectorAll('.student-search-item');
+        if (!items.length || dropdown.style.display === 'none') return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightIdx = Math.min(highlightIdx + 1, items.length - 1);
+            updateHighlight(items, highlightIdx);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightIdx = Math.max(highlightIdx - 1, 0);
+            updateHighlight(items, highlightIdx);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightIdx >= 0 && highlightIdx < items.length) {
+                // 화살표로 선택한 항목이 있으면 해당 항목 선택
+                items[highlightIdx].click();
+            } else if (items.length > 0) {
+                // 화살표 선택 없이 Enter만 누르면 첫 번째 결과 자동 선택
+                items[0].click();
+            }
+        } else if (e.key === 'Escape') {
+            dropdown.style.display = 'none';
+            highlightIdx = -1;
+        }
+    });
+
+    // X 버튼 클릭
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        dropdown.style.display = 'none';
+        highlightIdx = -1;
+        searchInput.focus();
+    });
+
+    // 외부 클릭 시 드롭다운 닫기
+    document.addEventListener('click', (e) => {
+        const wrapper = document.getElementById('studentSearchWrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            dropdown.style.display = 'none';
+            highlightIdx = -1;
+        }
+    });
+}
+
+function searchStudents(query) {
+    const grade = state.currentGradeIndiv || state.availableGrades[0];
+    if (!grade) return [];
+    const exams = getExamsForGrade(grade);
+    if (!exams.length) return [];
+
+    // 모든 시험에서 학생 수집 (중복 제거)
+    const studentMap = new Map();
+    exams.forEach(exam => {
+        exam.students.forEach(s => {
+            if (!studentMap.has(s.uid)) {
+                studentMap.set(s.uid, s);
+            }
+        });
+    });
+
+    const allStudents = Array.from(studentMap.values());
+    const q = query.toLowerCase();
+
+    return allStudents.filter(s => {
+        const name = s.info.name.toLowerCase();
+        const no = String(s.info.no);
+        const classNo = String(s.info.class);
+        const fullId = `${s.info.class}반 ${s.info.no}번`;
+        return name.includes(q) || no === q || classNo === q || fullId.includes(q);
+    }).sort((a, b) => {
+        // 이름 매칭 우선, 그 다음 반-번호순
+        const aNameMatch = a.info.name.toLowerCase().startsWith(q) ? 0 : 1;
+        const bNameMatch = b.info.name.toLowerCase().startsWith(q) ? 0 : 1;
+        if (aNameMatch !== bNameMatch) return aNameMatch - bNameMatch;
+        if (a.info.class !== b.info.class) return a.info.class - b.info.class;
+        return a.info.no - b.info.no;
+    }).slice(0, 30); // 최대 30명
+}
+
+function renderSearchDropdown(results, query) {
+    const dropdown = document.getElementById('studentSearchDropdown');
+    if (!dropdown) return;
+
+    if (results.length === 0) {
+        dropdown.innerHTML = `<div class="student-search-no-result">
+            <i class="fas fa-search" style="margin-right:6px;"></i>
+            '${query}'에 해당하는 학생이 없습니다
+        </div>`;
+        dropdown.style.display = 'block';
+        return;
+    }
+
+    let html = `<div class="student-search-count">검색 결과: ${results.length}명</div>`;
+
+    results.forEach(s => {
+        const highlightedName = highlightText(s.info.name, query);
+        html += `<div class="student-search-item" data-uid="${s.uid}" data-class="${s.info.class}">
+            <span class="student-search-item-name">${highlightedName}</span>
+            <span class="student-search-item-info">${s.info.class}반 ${s.info.no}번</span>
+        </div>`;
+    });
+
+    dropdown.innerHTML = html;
+    dropdown.style.display = 'block';
+
+    // 클릭 이벤트
+    dropdown.querySelectorAll('.student-search-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const uid = item.dataset.uid;
+            const cls = item.dataset.class;
+
+            // 반 선택 변경
+            const classSelect = document.getElementById('indivClassSelect');
+            if (classSelect) {
+                classSelect.value = cls;
+                updateIndivList();
+            }
+
+            // 학생 선택
+            setTimeout(() => {
+                const studentSelect = document.getElementById('indivStudentSelect');
+                if (studentSelect) {
+                    studentSelect.value = uid;
+                    renderIndividual();
+                }
+
+                // 검색창 정리
+                const searchInput = document.getElementById('studentSearchInput');
+                const clearBtn = document.getElementById('studentSearchClear');
+                if (searchInput) searchInput.value = '';
+                if (clearBtn) clearBtn.style.display = 'none';
+                dropdown.style.display = 'none';
+            }, 100);
+        });
+    });
+}
+
+function highlightText(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+}
+
+function updateHighlight(items, idx) {
+    items.forEach((item, i) => {
+        item.classList.toggle('highlighted', i === idx);
+    });
+    if (items[idx]) {
+        items[idx].scrollIntoView({ block: 'nearest' });
+    }
 }
 
 function renderIndividual() {

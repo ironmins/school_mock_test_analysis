@@ -1472,3 +1472,144 @@ header p {
         print-color-adjust: exact;
     }
 }
+
+/* ============================================================
+   학생 검색 (개인통계 탭)
+   ============================================================ */
+.student-search-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.student-search-input-row {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.student-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.student-search-input {
+    padding: 8px 30px 8px 30px;
+    border: 2px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    width: 180px;
+    transition: all 0.25s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+.student-search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-bg);
+    width: 220px;
+}
+
+.student-search-input::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.student-search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.student-search-clear:hover {
+    color: var(--primary);
+}
+
+.student-search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 280px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--bg-card);
+    border: 2px solid var(--primary-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 2000;
+    margin-top: 4px;
+}
+
+.student-search-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.12s;
+    border-bottom: 1px solid var(--neutral-100);
+}
+
+.student-search-item:last-child {
+    border-bottom: none;
+}
+
+.student-search-item:hover,
+.student-search-item.highlighted {
+    background: var(--primary-bg);
+    color: var(--primary);
+}
+
+.student-search-item-name {
+    font-weight: 600;
+}
+
+.student-search-item-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.student-search-item-name mark {
+    background: rgba(139, 41, 66, 0.15);
+    color: var(--primary);
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 700;
+}
+
+.student-search-no-result {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.student-search-count {
+    padding: 6px 14px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: var(--neutral-100);
+    border-bottom: 1px solid var(--neutral-200);
+    font-weight: 600;
+}
