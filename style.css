@@ -986,6 +986,49 @@ header p {
     min-width: 0;
 }
 
+/* ===== 과목 상세 카드 내 표 라운드 헤더 ===== */
+.subject-detail-grid .data-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+}
+
+/* 헤더 첫 번째 th — 좌상단 라운드 */
+.subject-detail-grid .data-table thead tr:first-child th:first-child {
+    border-top-left-radius: var(--radius-md);
+}
+/* 헤더 마지막 th — 우상단 라운드 */
+.subject-detail-grid .data-table thead tr:first-child th:last-child {
+    border-top-right-radius: var(--radius-md);
+}
+/* tbody 마지막 행 첫 번째 td — 좌하단 라운드 */
+.subject-detail-grid .data-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--radius-md);
+}
+/* tbody 마지막 행 마지막 td — 우하단 라운드 */
+.subject-detail-grid .data-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--radius-md);
+}
+/* 외곽 테두리를 table 자체에 적용 (border-separate이므로 셀 테두리 중복 방지) */
+.subject-detail-grid .data-table thead tr:first-child th {
+    border-top: 1px solid var(--primary-dark);
+}
+.subject-detail-grid .data-table thead tr:first-child th:first-child {
+    border-left: 1px solid var(--primary-dark);
+}
+.subject-detail-grid .data-table thead tr:first-child th:last-child {
+    border-right: 1px solid var(--primary-dark);
+}
+.subject-detail-grid .data-table tbody tr:last-child td:first-child {
+    border-left: 1px solid var(--neutral-200);
+}
+.subject-detail-grid .data-table tbody tr:last-child td:last-child {
+    border-right: 1px solid var(--neutral-200);
+}
+.subject-detail-grid .data-table tbody tr:last-child td {
+    border-bottom: 1px solid var(--neutral-200);
+}
+
 /* ===== PDF 버튼 ===== */
 .pdf-btn {
     padding: 10px 18px;

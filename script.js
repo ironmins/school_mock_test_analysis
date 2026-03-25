@@ -1845,7 +1845,7 @@ async function captureTabPageV2(pdf, showSelectors, addNewPage) {
     const pdfPageHeight = pdf.internal.pageSize.getHeight();
     const marginX = 8, marginY = 8;
     const contentWidth = pdfWidth - marginX * 2;
-    const cloneWidth = 1100;
+    const cloneWidth = 1600;
 
     const canvasMap = new Map();
     source.querySelectorAll('canvas').forEach(c => {
@@ -1854,22 +1854,43 @@ async function captureTabPageV2(pdf, showSelectors, addNewPage) {
     });
 
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = `position:fixed;top:-99999px;left:0;width:${cloneWidth}px;max-width:${cloneWidth}px;background:#FEFDFB;padding:20px 24px;box-sizing:border-box;display:block;overflow:visible;z-index:-9999;`;
+    wrapper.style.cssText = `position:fixed;top:-99999px;left:0;width:${cloneWidth}px;min-width:${cloneWidth}px;max-width:${cloneWidth}px;background:#FEFDFB;padding:20px 24px;box-sizing:border-box;display:block;overflow:visible;z-index:-9999;`;
+
+    // chart-card 너비를 wrapper에 맞게 강제하는 헬퍼
+    const fixCardWidths = (el) => {
+        el.querySelectorAll('.chart-card, .student-profile-card').forEach(card => {
+            card.style.setProperty('width', '100%', 'important');
+            card.style.setProperty('box-sizing', 'border-box', 'important');
+            card.style.setProperty('max-width', 'none', 'important');
+        });
+    };
 
     const allSubjects = ['kor', 'math', 'eng', 'hist', 'inq1', 'inq2'];
 
     if (showSelectors.includes('profile')) {
         const profileCard = source.querySelector('.student-profile-card');
-        if (profileCard) { const pc = profileCard.cloneNode(true); pc.style.marginBottom = '16px'; wrapper.appendChild(pc); }
+        if (profileCard) {
+            const pc = profileCard.cloneNode(true);
+            pc.style.marginBottom = '16px';
+            pc.style.width = '100%';
+            pc.style.boxSizing = 'border-box';
+            const statsGrid = pc.querySelector('.profile-stats');
+            if (statsGrid) statsGrid.setAttribute('style', 'display:grid !important;grid-template-columns:repeat(5,1fr) !important;gap:15px !important;width:100% !important;');
+            const profileHeader = pc.querySelector('.profile-header');
+            if (profileHeader) profileHeader.setAttribute('style', 'display:flex !important;justify-content:space-between !important;align-items:flex-start !important;margin-bottom:20px !important;width:100% !important;');
+            wrapper.appendChild(pc);
+        }
     }
 
     if (showSelectors.includes('charts')) {
         const chartsRow = source.querySelector('.charts-row');
         if (chartsRow) {
             const cr = chartsRow.cloneNode(true);
-            cr.setAttribute('style', 'display:grid !important;grid-template-columns:3fr 2fr !important;gap:20px !important;margin-bottom:20px !important;width:100% !important;');
-            cr.querySelectorAll('.chart-half').forEach(ch => { ch.style.overflow = 'visible'; ch.style.minHeight = '0'; ch.style.height = 'auto'; });
-            cr.querySelectorAll('.chart-half .chart-container').forEach(cc => { cc.setAttribute('style', 'overflow:visible !important;height:auto !important;min-height:200px !important;width:100% !important;display:block !important;position:relative !important;'); });
+            cr.setAttribute('style', 'display:grid !important;grid-template-columns:3fr 2fr !important;gap:20px !important;margin-bottom:20px !important;width:100% !important;box-sizing:border-box !important;');
+            cr.querySelectorAll('.chart-half').forEach(ch => {
+                ch.setAttribute('style', 'display:flex !important;flex-direction:column !important;overflow:visible !important;min-height:0 !important;height:auto !important;width:100% !important;box-sizing:border-box !important;');
+            });
+            cr.querySelectorAll('.chart-half .chart-container').forEach(cc => { cc.setAttribute('style', 'overflow:visible !important;height:360px !important;min-height:360px !important;width:100% !important;display:block !important;position:relative !important;'); });
             wrapper.appendChild(cr);
         }
     }
@@ -1881,9 +1902,38 @@ async function captureTabPageV2(pdf, showSelectors, addNewPage) {
         const cc = card.cloneNode(true);
         cc.style.marginBottom = '16px';
         cc.querySelectorAll('.subject-detail-grid').forEach(grid => {
-            grid.setAttribute('style', 'display:grid !important;grid-template-columns:1fr 1fr !important;gap:16px !important;align-items:start !important;width:100% !important;');
+            grid.setAttribute('style', 'display:grid !important;grid-template-columns:2fr 3fr !important;gap:16px !important;align-items:start !important;width:100% !important;');
             grid.querySelectorAll('.chart-container').forEach(chartC => { chartC.setAttribute('style', 'height:auto !important;width:100% !important;position:relative !important;overflow:visible !important;'); });
-            grid.querySelectorAll('.table-wrapper').forEach(tw => { tw.setAttribute('style', 'overflow-x:auto !important;max-height:none !important;width:100% !important;'); });
+            grid.querySelectorAll('.table-wrapper').forEach(tw => { tw.setAttribute('style', 'overflow:visible !important;overflow-x:visible !important;max-height:none !important;width:100% !important;'); });
+            grid.querySelectorAll('table').forEach(tbl => {
+                tbl.setAttribute('style', 'min-width:0 !important;width:100% !important;table-layout:auto !important;font-size:0.75rem !important;border-collapse:separate !important;border-spacing:0 !important;overflow:hidden !important;');
+                // thead 행을 tbody 맨 위로 물리적으로 이동 (html2canvas thead/tbody display 버그 회피)
+                const thead = tbl.querySelector('thead');
+                const tbody = tbl.querySelector('tbody');
+                if (thead && tbody) {
+                    Array.from(thead.querySelectorAll('tr')).reverse().forEach(row => {
+                        tbody.insertBefore(row, tbody.firstChild);
+                    });
+                    thead.remove();
+                }
+                // 이동 후: tbody 첫 번째 행(구분 헤더)에 상단 라운드 적용
+                const firstRowCells = tbl.querySelectorAll('tbody tr:first-child th, tbody tr:first-child td');
+                firstRowCells.forEach((cell, i) => {
+                    let r = '';
+                    if (i === 0) r += 'border-top-left-radius:12px !important;';
+                    if (i === firstRowCells.length - 1) r += 'border-top-right-radius:12px !important;';
+                    if (r) cell.setAttribute('style', (cell.getAttribute('style') || '') + r);
+                });
+                // tbody 마지막 행에 하단 라운드 적용
+                const lastRowCells = tbl.querySelectorAll('tbody tr:last-child td');
+                lastRowCells.forEach((td, i) => {
+                    let r = '';
+                    if (i === 0) r += 'border-bottom-left-radius:12px !important;';
+                    if (i === lastRowCells.length - 1) r += 'border-bottom-right-radius:12px !important;';
+                    if (r) td.setAttribute('style', (td.getAttribute('style') || '') + r);
+                });
+            });
+            grid.querySelectorAll('th, td').forEach(cell => { cell.setAttribute('style', (cell.getAttribute('style')||'') + 'white-space:nowrap !important;padding:4px 6px !important;'); });
         });
         wrapper.appendChild(cc);
     });
@@ -1898,11 +1948,33 @@ async function captureTabPageV2(pdf, showSelectors, addNewPage) {
         cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
     });
 
+    // wrapper를 화면 밖 고정 위치에 추가 (레이아웃/스크롤에 영향 없음)
+    wrapper.id = '__pdf_wrapper__';
+    // body 스크롤/리플로우 방지 (overflow:hidden 임시 적용)
+    const prevOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
     document.body.appendChild(wrapper);
-    await new Promise(r => setTimeout(r, 400));
+    fixCardWidths(wrapper);
 
-    const canvas = await html2canvas(wrapper, { scale: 2, useCORS: true, backgroundColor: '#FEFDFB', windowWidth: cloneWidth + 60, logging: false, allowTaint: true });
+    await new Promise(r => setTimeout(r, 300));
+
+    const canvas = await html2canvas(wrapper, {
+        scale: 2, useCORS: true, backgroundColor: '#FEFDFB',
+        windowWidth: cloneWidth, logging: false, allowTaint: true,
+        onclone: (clonedDoc, clonedEl) => {
+            // html2canvas 내부 복제 DOM에서만 스타일 오버라이드 → 실제 화면 불변
+            const overrideStyle = clonedDoc.createElement('style');
+            overrideStyle.textContent = [
+                `body { min-width: ${cloneWidth}px !important; overflow: visible !important; }`,
+                `.container { max-width: none !important; width: 100% !important; }`,
+                `#__pdf_wrapper__ { width: ${cloneWidth}px !important; min-width: ${cloneWidth}px !important; max-width: none !important; }`,
+            ].join('\n');
+            clonedDoc.head.appendChild(overrideStyle);
+        },
+    });
+
     document.body.removeChild(wrapper);
+    document.documentElement.style.overflow = prevOverflow;
 
     const imgData = canvas.toDataURL('image/jpeg', 0.92);
     const imgProps = pdf.getImageProperties(imgData);
@@ -1933,9 +2005,10 @@ async function generateStudentPDF() {
 
     try {
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdf = new jsPDF('l', 'mm', 'a4');
         await new Promise(r => setTimeout(r, 1000));
-        await captureTabPageV2(pdf, ['profile', 'charts', 'kor', 'math', 'eng'], false);
+        await captureTabPageV2(pdf, ['profile', 'charts'], false);
+        await captureTabPageV2(pdf, ['kor', 'math', 'eng'], true);
         await captureTabPageV2(pdf, ['hist', 'inq1', 'inq2'], true);
         const studentName = document.getElementById('indivName').innerText;
         pdf.save(`모의고사_분석리포트_${studentName}.pdf`);
@@ -1959,13 +2032,14 @@ async function generateClassPDF() {
 
     try {
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdf = new jsPDF('l', 'mm', 'a4');
         for (let i = 0; i < options.length; i++) {
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> PDF 생성 중... (${i + 1}/${options.length})`;
             sel.value = options[i].value;
             renderIndividual();
             await new Promise(r => setTimeout(r, 1000));
-            await captureTabPageV2(pdf, ['profile', 'charts', 'kor', 'math', 'eng'], i > 0);
+            await captureTabPageV2(pdf, ['profile', 'charts'], i > 0);
+            await captureTabPageV2(pdf, ['kor', 'math', 'eng'], true);
             await captureTabPageV2(pdf, ['hist', 'inq1', 'inq2'], true);
         }
         pdf.save(`모의고사_분석리포트_${cls}반_전체.pdf`);
