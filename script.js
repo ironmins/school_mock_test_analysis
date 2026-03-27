@@ -403,6 +403,34 @@ function switchTab(t) {
     if (t === 'overall' && state.charts.bubble) state.charts.bubble.resize();
 }
 
+/* ── 성적일람표에서 개인통계 탭으로 바로 이동 ── */
+window.goToIndividual = function(uid, grade) {
+    // 학년 동기화
+    state.currentGradeIndiv = grade;
+    const gradeSelectIndiv = document.getElementById('gradeSelectIndiv');
+    if (gradeSelectIndiv) gradeSelectIndiv.value = grade;
+    updateExamSelector('indivExamSelect', grade);
+
+    // 반 추출 (uid 형식: "반-번호-이름")
+    const cls = parseInt(uid.split('-')[0]);
+    const indivClassSelect = document.getElementById('indivClassSelect');
+    if (indivClassSelect) {
+        indivClassSelect.value = cls;
+    }
+
+    // 학생 목록 갱신 후 해당 학생 선택
+    updateIndivList();
+    setTimeout(() => {
+        const studentSelect = document.getElementById('indivStudentSelect');
+        if (studentSelect) {
+            studentSelect.value = uid;
+            renderIndividual();
+        }
+        switchTab('individual');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
+};
+
 /* ── 유틸: 학생 배열에서 영역별 선택과목 그룹 추출 ── */
 function getChoiceGroups(students, areaKey) {
     // 해당 영역에서 어떤 선택과목들이 있는지 + 학생 분류
@@ -788,11 +816,12 @@ function buildTotalTable(students, metric) {
     const getAvgGrade = s => ((s.kor.grd + s.math.grd + s.eng.grd + (s.inq1.grd + s.inq2.grd) / 2) / 4).toFixed(2);
 
     tbody.innerHTML = '';
+    const grade = state.currentGradeTotal || state.availableGrades[0];
     students.slice(0, 500).forEach(s => {
         let row = `<tr>`;
         row += `<td style="font-weight:bold;color:var(--primary);">${s.totalRank}</td>`;
-        row += `<td>${s.info.grade}${String(s.info.class).padStart(2, '0')}${String(s.info.no).padStart(2, '0')}</td>`;
-        row += `<td style="font-weight:bold;">${s.info.name}</td>`;
+        row += `<td class="student-link-cell" onclick="goToIndividual('${s.uid}', ${grade})" title="개인통계 보기">${s.info.grade}${String(s.info.class).padStart(2, '0')}${String(s.info.no).padStart(2, '0')}</td>`;
+        row += `<td class="student-link-cell" onclick="goToIndividual('${s.uid}', ${grade})" title="개인통계 보기" style="font-weight:bold;">${s.info.name}</td>`;
 
         areas.forEach(area => {
             const isAbs = (area.k === 'eng' || area.k === 'hist');
@@ -1364,10 +1393,11 @@ function renderClass() {
     thead.innerHTML = h1 + h2;
 
     const getAvgGrade = s => ((s.kor.grd + s.math.grd + s.eng.grd + (s.inq1.grd + s.inq2.grd) / 2) / 4).toFixed(2);
+    const gradeForClass = state.currentGradeClass || state.availableGrades[0];
     tbody.innerHTML = '';
     students.forEach(s => {
         const rank = students.filter(st => parseFloat(getTot(st)) > parseFloat(getTot(s))).length + 1;
-        let row = `<tr><td>${s.info.no}</td><td style="font-weight:bold;">${s.info.name}</td>`;
+        let row = `<tr><td class="student-link-cell" onclick="goToIndividual('${s.uid}', ${gradeForClass})" title="개인통계 보기">${s.info.no}</td><td class="student-link-cell" onclick="goToIndividual('${s.uid}', ${gradeForClass})" title="개인통계 보기" style="font-weight:bold;">${s.info.name}</td>`;
 
         areas.forEach(area => {
             const isAbs = (area.k === 'eng' || area.k === 'hist');

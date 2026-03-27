@@ -1656,3 +1656,14 @@ header p {
     border-bottom: 1px solid var(--neutral-200);
     font-weight: 600;
 }
+/* ── 성적일람표 클릭 가능한 학생 셀 ── */
+.student-link-cell {
+    cursor: pointer;
+    color: var(--primary, #6B4C8B);
+    transition: background 0.15s, color 0.15s;
+}
+.student-link-cell:hover {
+    background: rgba(107, 76, 139, 0.08);
+    color: var(--primary-dark, #4a2f6e);
+    text-decoration: underline;
+}
