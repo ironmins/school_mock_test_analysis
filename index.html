@@ -5,29 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>고등학교 모의고사 성적 분석 프로그램</title>
     <link rel="stylesheet" href="style.css">
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" as="style" crossorigin
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          rel="stylesheet">
 </head>
 <body>
     <div class="container">
+
+        <!-- ===== 헤더 ===== -->
         <header>
-            <h1><i class="fas fa-chart-pie"></i> 고등학교 모의고사 성적 분석 프로그램 <span class="badge-lite">Web</span></h1>
+            <h1>
+                <i class="fas fa-chart-pie"></i>
+                고등학교 모의고사 성적 분석 프로그램
+                <span class="badge-lite">Web</span>
+            </h1>
             <p>대교협 양식 파일을 업로드하여 모의고사 성적을 분석합니다</p>
         </header>
 
+        <!-- ===== 업로드 섹션 ===== -->
         <div class="upload-section" id="uploadSection">
             <div class="upload-guide">
                 <p><strong><i class="fas fa-info-circle"></i> 파일 업로드 방법:</strong></p>
                 <p><strong>대교협 양식</strong>의 모의고사 성적 파일(xlsx, xls, csv, xlsm)을 업로드하세요.</p>
-                <p class="warning-text"><strong>⚠️ 여러 파일을 동시에 선택하여 업로드할 수 있습니다.</strong></p>
+                <p class="warning-text">
+                    <strong>⚠️ 여러 파일을 동시에 선택하여 업로드할 수 있습니다.</strong>
+                </p>
                 <div class="privacy-notice">
                     <p>🔒 보안 안내</p>
                     <ul>
@@ -35,10 +46,14 @@
                         <li>모든 분석은 <strong>사용자의 브라우저(로컬)</strong>에서만 수행됩니다.</li>
                         <li>페이지를 닫거나 새로고침하면 메모리에 남은 데이터는 사라집니다.</li>
                     </ul>
-                    <p class="privacy-footnote">즉, 업로드한 양식은 외부로 유출되지 않습니다 🙂</p>
+                    <p class="privacy-footnote">
+                        즉, 업로드한 양식은 외부로 유출되지 않습니다 🙂
+                    </p>
                 </div>
             </div>
+
             <div class="section-divider"></div>
+
             <div class="file-input-wrapper">
                 <input type="file" id="fileInput" multiple accept=".xlsx, .xls, .csv, .xlsm" />
                 <label for="fileInput" class="file-input-label">
@@ -47,7 +62,9 @@
                 </label>
                 <div class="upload-hint">클릭 또는 드래그로 업로드</div>
             </div>
+
             <div id="fileList" class="file-list" style="display: none;"></div>
+
             <div class="action-buttons">
                 <button id="analyzeBtn" class="analyze-btn" disabled>
                     <i class="fas fa-search"></i> 분석 시작
@@ -58,48 +75,81 @@
             </div>
         </div>
 
+        <!-- ===== 로딩 ===== -->
         <div id="loading" class="loading" style="display: none;">
             <div class="spinner"></div>
             <p id="loadingText">분석 중...</p>
         </div>
 
+        <!-- ===== 결과 섹션 ===== -->
         <div id="results" class="results-section" style="display: none;">
+
+            <!-- 탭 버튼 -->
             <div class="tabs">
-                <button class="tab-btn active" data-tab="overall"><i class="fas fa-chart-bar"></i> 전체통계</button>
-                <button class="tab-btn" data-tab="class"><i class="fas fa-users"></i> 학급통계</button>
-                <button class="tab-btn" data-tab="individual"><i class="fas fa-user"></i> 개인통계</button>
+                <button class="tab-btn active" data-tab="overall">
+                    <i class="fas fa-chart-bar"></i> 전체통계
+                </button>
+                <button class="tab-btn" data-tab="class">
+                    <i class="fas fa-users"></i> 학급통계
+                </button>
+                <button class="tab-btn" data-tab="individual">
+                    <i class="fas fa-user"></i> 개인통계
+                </button>
+                <button class="tab-btn" data-tab="top">
+                    <i class="fas fa-trophy"></i> 상위권 분석
+                </button>
             </div>
 
+            <!-- ===== 전체통계 탭 ===== -->
             <div id="overall-tab" class="tab-content active">
                 <div class="control-panel">
                     <div class="control-left">
-                        <label class="control-label"><i class="fas fa-graduation-cap"></i> 학년:</label>
+                        <label class="control-label">
+                            <i class="fas fa-graduation-cap"></i> 학년:
+                        </label>
                         <select id="gradeSelectTotal" class="selector"></select>
-                        <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
+
+                        <label class="control-label">
+                            <i class="fas fa-clipboard-list"></i> 시험 선택:
+                        </label>
                         <select id="examSelectTotal" class="selector"></select>
                     </div>
                     <div class="control-right">
                         <span class="metric-label">Metric</span>
-                        <button onclick="changeMetric('raw')" id="btn-raw" class="opt-btn active">원점수</button>
-                        <button onclick="changeMetric('std')" id="btn-std" class="opt-btn">표준점수</button>
-                        <button onclick="changeMetric('pct')" id="btn-pct" class="opt-btn">백분위</button>
+                        <button onclick="changeMetric('raw')" id="btn-raw" class="opt-btn active">
+                            원점수
+                        </button>
+                        <button onclick="changeMetric('std')" id="btn-std" class="opt-btn">
+                            표준점수
+                        </button>
+                        <button onclick="changeMetric('pct')" id="btn-pct" class="opt-btn">
+                            백분위
+                        </button>
                     </div>
                 </div>
 
                 <div class="chart-card">
                     <h3><i class="fas fa-braille"></i> 반별 성적 분포</h3>
-                    <div class="chart-container"><canvas id="bubbleChart"></canvas></div>
+                    <div class="chart-container">
+                        <canvas id="bubbleChart"></canvas>
+                    </div>
                 </div>
 
                 <div class="chart-card">
                     <h3><i class="fas fa-star-half-alt"></i> 반별 평균등급 분포</h3>
-                    <div class="chart-container"><canvas id="gradesBubbleChart"></canvas></div>
+                    <div class="chart-container">
+                        <canvas id="gradesBubbleChart"></canvas>
+                    </div>
                 </div>
 
-                <h3 class="section-title"><i class="fas fa-th-large"></i> 과목별 종합 분석 (등급분포)</h3>
+                <h3 class="section-title">
+                    <i class="fas fa-th-large"></i> 과목별 종합 분석 (등급분포)
+                </h3>
                 <div id="combinedStatsContainer"></div>
 
-                <h3 class="section-title"><i class="fas fa-filter"></i> 과목별 등급 구간 학생 조회</h3>
+                <h3 class="section-title">
+                    <i class="fas fa-filter"></i> 과목별 등급 구간 학생 조회
+                </h3>
                 <div class="chart-card">
                     <div class="grade-filter-panel">
                         <div id="gradeFilterGroup"></div>
@@ -107,7 +157,8 @@
                     <div id="gradeFilterResult" class="grade-filter-result" style="display:none;">
                         <div class="grade-filter-result-header">
                             <div class="grade-filter-summary" id="gradeFilterSummary"></div>
-                            <button id="exportGradeFilterBtn" class="export-btn" onclick="exportGradeFilterToExcel()">
+                            <button id="exportGradeFilterBtn" class="export-btn"
+                                    onclick="exportGradeFilterToExcel()">
                                 <i class="fas fa-file-excel"></i> 엑셀 저장
                             </button>
                         </div>
@@ -127,7 +178,8 @@
                 <div class="chart-card">
                     <div class="card-header-row">
                         <h3><i class="fas fa-list-ol"></i> 전체 성적 일람표 (총점순)</h3>
-                        <button id="exportTotalTableBtn" class="export-btn" onclick="exportTotalTableToExcel()">
+                        <button id="exportTotalTableBtn" class="export-btn"
+                                onclick="exportTotalTableToExcel()">
                             <i class="fas fa-file-excel"></i> 엑셀 저장
                         </button>
                     </div>
@@ -140,27 +192,45 @@
                 </div>
             </div>
 
+            <!-- ===== 학급통계 탭 ===== -->
             <div id="class-tab" class="tab-content">
                 <div class="control-panel">
                     <div class="control-left">
-                        <label class="control-label"><i class="fas fa-graduation-cap"></i> 학년:</label>
+                        <label class="control-label">
+                            <i class="fas fa-graduation-cap"></i> 학년:
+                        </label>
                         <select id="gradeSelectClass" class="selector"></select>
-                        <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
+
+                        <label class="control-label">
+                            <i class="fas fa-clipboard-list"></i> 시험 선택:
+                        </label>
                         <select id="examSelectClass" class="selector"></select>
-                        <label class="control-label"><i class="fas fa-door-open"></i> 반:</label>
+
+                        <label class="control-label">
+                            <i class="fas fa-door-open"></i> 반:
+                        </label>
                         <select id="classSelect" class="selector"></select>
                     </div>
                     <div class="control-right">
-                        <button onclick="changeClassMetric('raw')" id="btn-c-raw" class="opt-btn active">원점수</button>
-                        <button onclick="changeClassMetric('std')" id="btn-c-std" class="opt-btn">표준점수</button>
-                        <button onclick="changeClassMetric('pct')" id="btn-c-pct" class="opt-btn">백분위</button>
+                        <button onclick="changeClassMetric('raw')" id="btn-c-raw"
+                                class="opt-btn active">원점수</button>
+                        <button onclick="changeClassMetric('std')" id="btn-c-std"
+                                class="opt-btn">표준점수</button>
+                        <button onclick="changeClassMetric('pct')" id="btn-c-pct"
+                                class="opt-btn">백분위</button>
                         <span class="divider"></span>
-                        <button onclick="sortClass('total')" id="btn-sort-total" class="opt-btn"><i class="fas fa-sort-amount-down"></i> 총점</button>
-                        <button onclick="sortClass('no')" id="btn-sort-no" class="opt-btn active"><i class="fas fa-sort-numeric-down"></i> 번호</button>
+                        <button onclick="sortClass('total')" id="btn-sort-total" class="opt-btn">
+                            <i class="fas fa-sort-amount-down"></i> 총점
+                        </button>
+                        <button onclick="sortClass('no')" id="btn-sort-no" class="opt-btn active">
+                            <i class="fas fa-sort-numeric-down"></i> 번호
+                        </button>
                     </div>
                 </div>
 
-                <h3 class="section-title"><i class="fas fa-th-large"></i> 학급 과목별 종합 분석 (등급분포)</h3>
+                <h3 class="section-title">
+                    <i class="fas fa-th-large"></i> 학급 과목별 종합 분석 (등급분포)
+                </h3>
                 <div id="classStatsContainer"></div>
 
                 <div class="chart-card">
@@ -174,32 +244,56 @@
                 </div>
             </div>
 
+            <!-- ===== 개인통계 탭 ===== -->
             <div id="individual-tab" class="tab-content">
                 <div class="control-panel non-printable">
                     <div class="control-left">
-                        <label class="control-label"><i class="fas fa-graduation-cap"></i> 학년:</label>
+                        <label class="control-label">
+                            <i class="fas fa-graduation-cap"></i> 학년:
+                        </label>
                         <select id="gradeSelectIndiv" class="selector"></select>
-                        <label class="control-label"><i class="fas fa-door-open"></i> 학급:</label>
+
+                        <label class="control-label">
+                            <i class="fas fa-door-open"></i> 학급:
+                        </label>
                         <select id="indivClassSelect" class="selector"></select>
-                        <label class="control-label"><i class="fas fa-user"></i> 학생:</label>
+
+                        <label class="control-label">
+                            <i class="fas fa-user"></i> 학생:
+                        </label>
                         <div class="student-search-wrapper" id="studentSearchWrapper">
                             <div class="student-search-input-row">
                                 <i class="fas fa-search student-search-icon"></i>
-                                <input type="text" id="studentSearchInput" class="student-search-input"
-                                       placeholder="이름 또는 번호 검색..." autocomplete="off" />
-                                <button id="studentSearchClear" class="student-search-clear" style="display:none;"
+                                <input type="text" id="studentSearchInput"
+                                       class="student-search-input"
+                                       placeholder="이름 또는 번호 검색..."
+                                       autocomplete="off" />
+                                <button id="studentSearchClear"
+                                        class="student-search-clear"
+                                        style="display:none;"
                                         title="검색 초기화">&times;</button>
                             </div>
-                            <select id="indivStudentSelect" class="selector student-select"></select>
-                            <div id="studentSearchDropdown" class="student-search-dropdown" style="display:none;"></div>
+                            <select id="indivStudentSelect"
+                                    class="selector student-select"></select>
+                            <div id="studentSearchDropdown"
+                                 class="student-search-dropdown"
+                                 style="display:none;"></div>
                         </div>
+
                         <span class="divider"></span>
-                        <label class="control-label"><i class="fas fa-clipboard-list"></i> 시험 선택:</label>
+
+                        <label class="control-label">
+                            <i class="fas fa-clipboard-list"></i> 시험 선택:
+                        </label>
                         <select id="indivExamSelect" class="selector"></select>
                     </div>
                     <div class="control-right">
-                        <button id="pdfStudentBtn" class="pdf-btn"><i class="fas fa-file-pdf"></i> 개인 성적표 PDF</button>
-                        <button id="pdfClassBtn" class="pdf-btn"><i class="fas fa-file-pdf"></i> 학급 전체 PDF</button>
+                        <button id="pdfStudentBtn" class="pdf-btn">
+                            <i class="fas fa-file-pdf"></i> 개인 성적표 PDF
+                        </button>
+                        <button id="pdfClassBtn" class="pdf-btn">
+                            <i class="fas fa-file-pdf"></i> 학급 전체 PDF
+                        </button>
                     </div>
                 </div>
 
@@ -240,11 +334,14 @@
                 <div class="charts-row">
                     <div class="chart-card chart-half">
                         <h3><i class="fas fa-chart-line"></i> 총점(백분위 합) 추이</h3>
-                        <div class="chart-container"><canvas id="totalTrendChart"></canvas></div>
+                        <div class="chart-container">
+                            <canvas id="totalTrendChart"></canvas>
+                        </div>
                     </div>
                     <div class="chart-card chart-half">
                         <h3><i class="fas fa-chart-radar"></i> 회차별 과목 등급</h3>
-                        <div class="chart-container" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                        <div class="chart-container"
+                             style="display:flex;justify-content:center;align-items:center;width:100%;">
                             <canvas id="radarChart"></canvas>
                         </div>
                     </div>
@@ -252,8 +349,95 @@
 
                 <div id="subjectDetailContainer"></div>
             </div>
+
+            <!-- ===== 상위권 분석 탭 ===== -->
+            <div id="top-tab" class="tab-content">
+                <div class="control-panel">
+                    <!-- 첫째 줄: 학년, 최신시험, 비교시험 (좌측) / Metric (우측) -->
+                    <div class="control-row">
+                        <div class="control-left">
+                            <label class="control-label">
+                                <i class="fas fa-graduation-cap"></i> 학년:
+                            </label>
+                            <select id="gradeSelectTop" class="selector"></select>
+
+                            <label class="control-label">
+                                <i class="fas fa-clipboard-list"></i> 최신 시험:
+                            </label>
+                            <select id="examSelectTop" class="selector"></select>
+
+                            <label class="control-label">
+                                <i class="fas fa-exchange-alt"></i> 비교 시험:
+                            </label>
+                            <select id="examSelectTopPrev" class="selector"></select>
+                        </div>
+                        <div class="control-right">
+                            <span class="metric-label">Metric</span>
+                            <button onclick="changeTopMetric('raw')" id="btn-t-raw"
+                                    class="opt-btn active">원점수</button>
+                            <button onclick="changeTopMetric('std')" id="btn-t-std"
+                                    class="opt-btn">표준점수</button>
+                            <button onclick="changeTopMetric('pct')" id="btn-t-pct"
+                                    class="opt-btn">백분위</button>
+                        </div>
+                    </div>
+                    <!-- 둘째 줄: 상위N명 (좌측) / 엑셀저장 (우측) -->
+                    <div class="control-row">
+                        <div class="control-left">
+                            <label class="control-label">
+                                <i class="fas fa-medal"></i> 상위
+                            </label>
+                            <input type="range" id="topNSlider"
+                                   min="5" max="100" value="20" step="5"
+                                   class="top-n-slider" />
+                            <span id="topNValue" class="top-n-value">20명</span>
+                        </div>
+                        <div class="control-right">
+                            <button id="exportTopTableBtn" class="export-btn"
+                                    onclick="exportTopTableToExcel()">
+                                <i class="fas fa-file-excel"></i> 엑셀 저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="topSummaryBanner" class="top-summary-banner"></div>
+
+                <div class="chart-card">
+                    <div class="card-header-row">
+                        <h3>
+                            <i class="fas fa-trophy"></i> 상위권 성적 일람표 (최신 vs 직전)
+                        </h3>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table" id="topTable">
+                            <thead id="topTableHead"></thead>
+                            <tbody id="topTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3><i class="fas fa-th"></i> 과목별 점수 증감 히트맵</h3>
+                    <div class="table-wrapper" id="topHeatmapWrapper"></div>
+                </div>
+
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-bar"></i> 과목별 1등급 인원 변화</h3>
+                    <div class="chart-container">
+                        <canvas id="topGrade1Chart"></canvas>
+                    </div>
+                </div>
+
+                <h3 class="section-title">
+                    <i class="fas fa-lightbulb"></i> 학생별 강약점 분석 및 추이 코멘트
+                </h3>
+                <div id="topStrengthContainer" class="top-strength-grid"></div>
+            </div>
+
         </div>
 
+        <!-- ===== 푸터 ===== -->
         <footer class="app-footer non-printable">
             <div class="footer-left">
                 <span id="lastUpdated" class="last-updated"></span>
