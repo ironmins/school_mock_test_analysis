@@ -808,6 +808,14 @@ function renderOverall() {
     const ei = parseInt(es.value) || 0;
     if (!exams[ei]) return;
 
+    /* 시험 회차 변경 시 차트 강제 재생성 */
+    const examKey = `${grade}-${ei}`;
+    if (state._lastOverallExam !== examKey) {
+        if (state.charts.bubble) { state.charts.bubble.destroy(); state.charts.bubble = null; }
+        if (state.charts.gradesBubble) { state.charts.gradesBubble.destroy(); state.charts.gradesBubble = null; }
+        state._lastOverallExam = examKey;
+    }
+
     const students = exams[ei].students;
     const metric = state.metric;
     const classes = [...new Set(students.map(s => s.info.class))].sort((a, b) => a - b);
@@ -854,63 +862,72 @@ function renderOverall() {
         return { x: Number(c), y: parseFloat(avg.toFixed(1)), r: 12, name: `${c}반 평균` };
     });
 
-    if (state.charts.bubble) state.charts.bubble.destroy();
-    state.charts.bubble = new Chart(document.getElementById('bubbleChart'), {
-        type: 'bubble',
-        data: {
-            datasets: [
-                {
-                    label: '학생',
-                    data: bd,
-                    backgroundColor: bd.map(d => d.bg),
-                    borderColor: 'transparent'
-                },
-                {
-                    label: '반 평균',
-                    data: csad,
-                    backgroundColor: 'rgba(80,80,220,0.85)',
-                    borderColor: 'rgba(50,50,180,1)',
-                    borderWidth: 1.5
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    min: 0,
-                    max: maxClass + 1,
-                    ticks: {
-                        stepSize: 1,
-                        callback: v =>
-                            (Number.isInteger(v) && v > 0 && v <= maxClass) ? v + "반" : ""
+    const yLabel = metric === 'raw' ? '원점수 합 (한국사 제외)'
+        : (metric === 'std' ? '표준점수 합' : '백분위 합');
+
+    if (state.charts.bubble) {
+        /* 데이터만 교체 — destroy/recreate 없이 */
+        const chart = state.charts.bubble;
+        chart.data.datasets[0].data = bd;
+        chart.data.datasets[0].backgroundColor = bd.map(d => d.bg);
+        chart.data.datasets[1].data = csad;
+        chart.options.scales.x.max = maxClass + 1;
+        chart.options.scales.y.title.text = yLabel;
+        chart.update('none');
+    } else {
+        state.charts.bubble = new Chart(document.getElementById('bubbleChart'), {
+            type: 'bubble',
+            data: {
+                datasets: [
+                    {
+                        label: '학생',
+                        data: bd,
+                        backgroundColor: bd.map(d => d.bg),
+                        borderColor: 'transparent'
+                    },
+                    {
+                        label: '반 평균',
+                        data: csad,
+                        backgroundColor: 'rgba(80,80,220,0.85)',
+                        borderColor: 'rgba(50,50,180,1)',
+                        borderWidth: 1.5
                     }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: metric === 'raw' ? '원점수 합 (한국사 제외)'
-                            : (metric === 'std' ? '표준점수 합' : '백분위 합')
-                    }
-                }
+                ]
             },
-            plugins: {
-                legend: {
-                    display: true, position: 'top',
-                    labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        min: 0,
+                        max: maxClass + 1,
+                        ticks: {
+                            stepSize: 1,
+                            callback: v =>
+                                (Number.isInteger(v) && v > 0 && v <= maxClass) ? v + "반" : ""
+                        }
+                    },
+                    y: {
+                        title: { display: true, text: yLabel }
+                    }
                 },
-                datalabels: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: c => c.datasetIndex === 1
-                            ? `${c.raw.name}: ${c.raw.y}`
-                            : `${c.raw.x}반 ${c.raw.name}: ${c.raw.y.toFixed(1)}`
+                plugins: {
+                    legend: {
+                        display: true, position: 'top',
+                        labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
+                    },
+                    datalabels: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: c => c.datasetIndex === 1
+                                ? `${c.raw.name}: ${c.raw.y}`
+                                : `${c.raw.x}반 ${c.raw.name}: ${c.raw.y.toFixed(1)}`
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
     /* ── 반별 평균등급 분포 버블 차트 (기존과 동일) ── */
     const getAvgGradeVal = s =>
@@ -941,67 +958,75 @@ function renderOverall() {
         return { x: Number(c), y: parseFloat(avg.toFixed(2)), r: 12, name: `${c}반 평균` };
     });
 
-    if (state.charts.gradesBubble) state.charts.gradesBubble.destroy();
-    state.charts.gradesBubble = new Chart(document.getElementById('gradesBubbleChart'), {
-        type: 'bubble',
-        data: {
-            datasets: [
-                {
-                    label: '학생',
-                    data: gbd,
-                    backgroundColor: gbd.map(d => d.bg),
-                    borderColor: 'transparent'
-                },
-                {
-                    label: '반 평균',
-                    data: cgad,
-                    backgroundColor: 'rgba(80,80,220,0.85)',
-                    borderColor: 'rgba(50,50,180,1)',
-                    borderWidth: 1.5
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    min: 0,
-                    max: maxClass + 1,
-                    ticks: {
-                        stepSize: 1,
-                        callback: v =>
-                            (Number.isInteger(v) && v > 0 && v <= maxClass) ? v + "반" : ""
+    if (state.charts.gradesBubble) {
+        const chart = state.charts.gradesBubble;
+        chart.data.datasets[0].data = gbd;
+        chart.data.datasets[0].backgroundColor = gbd.map(d => d.bg);
+        chart.data.datasets[1].data = cgad;
+        chart.options.scales.x.max = maxClass + 1;
+        chart.update('none');
+    } else {
+        state.charts.gradesBubble = new Chart(document.getElementById('gradesBubbleChart'), {
+            type: 'bubble',
+            data: {
+                datasets: [
+                    {
+                        label: '학생',
+                        data: gbd,
+                        backgroundColor: gbd.map(d => d.bg),
+                        borderColor: 'transparent'
+                    },
+                    {
+                        label: '반 평균',
+                        data: cgad,
+                        backgroundColor: 'rgba(80,80,220,0.85)',
+                        borderColor: 'rgba(50,50,180,1)',
+                        borderWidth: 1.5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        min: 0,
+                        max: maxClass + 1,
+                        ticks: {
+                            stepSize: 1,
+                            callback: v =>
+                                (Number.isInteger(v) && v > 0 && v <= maxClass) ? v + "반" : ""
+                        }
+                    },
+                    y: {
+                        reverse: true,
+                        min: 0,
+                        max: 9.5,
+                        ticks: {
+                            stepSize: 1,
+                            callback: v =>
+                                (Number.isInteger(v) && v >= 1 && v <= 9) ? v + "등급" : ""
+                        },
+                        title: { display: true, text: '평균등급' }
                     }
                 },
-                y: {
-                    reverse: true,
-                    min: 0,
-                    max: 9.5,
-                    ticks: {
-                        stepSize: 1,
-                        callback: v =>
-                            (Number.isInteger(v) && v >= 1 && v <= 9) ? v + "등급" : ""
+                plugins: {
+                    legend: {
+                        display: true, position: 'top',
+                        labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
                     },
-                    title: { display: true, text: '평균등급' }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true, position: 'top',
-                    labels: { usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
-                },
-                datalabels: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: c => c.datasetIndex === 1
-                            ? `${c.raw.name}: ${c.raw.y}등급`
-                            : `${c.raw.x}반 ${c.raw.name}: ${c.raw.y}등급`
+                    datalabels: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: c => c.datasetIndex === 1
+                                ? `${c.raw.name}: ${c.raw.y}등급`
+                                : `${c.raw.x}반 ${c.raw.name}: ${c.raw.y}등급`
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 
     /* ── 과목별 종합 분석 ── */
     const container = document.getElementById('combinedStatsContainer');
@@ -1017,25 +1042,25 @@ function renderOverall() {
             { k: 'inq1', n: '사회탐구' },
             { k: 'inq2', n: '과학탐구' }
         ];
+        const cardHtmls = subs.map(sub => buildSubjectCardHTML(sub.n, students, sub.k, metric));
         const wrapper = document.createElement('div');
         wrapper.className = 'subject-grid subject-grid-fixed';
-        subs.forEach(sub => {
-            wrapper.innerHTML += buildSubjectCardHTML(sub.n, students, sub.k, metric);
-        });
+        wrapper.innerHTML = cardHtmls.join('');
         container.appendChild(wrapper);
     } else {
+        const parts = [];
         ['kor', 'math', 'eng', 'hist'].forEach(key => {
             const area = areas.find(a => a.k === key);
-            let ah = `
+            parts.push(`
                 <div class="area-section">
                     <h4 class="area-title">
                         <i class="fas fa-layer-group"></i> ${area.n}
-                    </h4>`;
-            ah += buildSingleAreaHTML(students, area.k, area.n, area.hasChoice, metric);
-            ah += `</div>`;
-            container.innerHTML += ah;
+                    </h4>
+                    ${buildSingleAreaHTML(students, area.k, area.n, area.hasChoice, metric)}
+                </div>`);
         });
-        container.innerHTML += buildInquiryAreaHTML(students, metric);
+        parts.push(buildInquiryAreaHTML(students, metric));
+        container.innerHTML = parts.join('');
     }
 
     /* ★ sorted (기준별 정렬된) 배열로 테이블 생성 */
@@ -1083,10 +1108,12 @@ function buildTotalTable(students, metric) {
         ((s.kor.grd + s.math.grd + s.eng.grd + (s.inq1.grd + s.inq2.grd) / 2) / 4).toFixed(2);
 
     const grade = state.currentGradeTotal || state.availableGrades[0];
-    tbody.innerHTML = '';
 
-    /* ★ students는 이미 기준별 정렬된 상태 (_metricRank 부여됨) */
-    students.slice(0, 500).forEach((s, idx) => {
+    /* ★ 배열 join으로 최적화 (innerHTML += 제거) */
+    const rows = [];
+    const slice = students.slice(0, 500);
+    for (let idx = 0; idx < slice.length; idx++) {
+        const s = slice[idx];
         const rank = idx + 1;
         const total = getTot(s);
         const totalDisplay = typeof total === 'number'
@@ -1124,8 +1151,9 @@ function buildTotalTable(students, metric) {
                 <td class="total-col" style="font-weight:bold;color:var(--primary);">
                     ${getAvgGrade(s)}
                 </td></tr>`;
-        tbody.innerHTML += row;
-    });
+        rows.push(row);
+    }
+    tbody.innerHTML = rows.join('');
 }
 
 /* ============================================================
