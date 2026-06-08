@@ -160,6 +160,8 @@ function initializeEventListeners() {
 
     document.getElementById('pdfStudentBtn')?.addEventListener('click', generateStudentPDF);
     document.getElementById('pdfClassBtn')?.addEventListener('click', generateClassPDF);
+    document.getElementById('prevStudentBtn')?.addEventListener('click', prevStudent);
+    document.getElementById('nextStudentBtn')?.addEventListener('click', nextStudent);
 
     document.getElementById('examSelectTop')?.addEventListener('change', renderTop);
     document.getElementById('examSelectTopPrev')?.addEventListener('change', renderTop);
@@ -1804,6 +1806,7 @@ function updateIndivList() {
     ).join('');
 
     if (list.length > 0) renderIndividual();
+    updateStudentNavCounter();
 }
 
 /* ── 학생 검색 ── */
@@ -2225,6 +2228,37 @@ function renderIndividual() {
             }, 0);
         });
     }
+    updateStudentNavCounter();
+}
+
+/* ── 이전/다음 학생 네비게이션 ── */
+function prevStudent() {
+    const sel = document.getElementById('indivStudentSelect');
+    if (!sel || sel.selectedIndex <= 0) return;
+    sel.selectedIndex--;
+    renderIndividual();
+}
+
+function nextStudent() {
+    const sel = document.getElementById('indivStudentSelect');
+    if (!sel || sel.selectedIndex >= sel.options.length - 1) return;
+    sel.selectedIndex++;
+    renderIndividual();
+}
+
+function updateStudentNavCounter() {
+    const sel = document.getElementById('indivStudentSelect');
+    const counter = document.getElementById('studentNavCounter');
+    const prevBtn = document.getElementById('prevStudentBtn');
+    const nextBtn = document.getElementById('nextStudentBtn');
+    if (!sel || !counter) return;
+
+    const total = sel.options.length;
+    const current = total > 0 ? sel.selectedIndex + 1 : 0;
+    counter.textContent = `${current} / ${total}`;
+
+    if (prevBtn) prevBtn.disabled = current <= 1;
+    if (nextBtn) nextBtn.disabled = current >= total;
 }
 
 function drawChart(id, type, data, options) {

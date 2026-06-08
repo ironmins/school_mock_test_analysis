@@ -972,6 +972,49 @@ header p {
     cursor: not-allowed;
 }
 
+/* ===== 학생 이전/다음 네비게이션 ===== */
+.student-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.student-nav-btn {
+    padding: 8px 16px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--neutral-300);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.student-nav-btn:hover:not(:disabled) {
+    background: var(--neutral-100);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.student-nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.student-nav-counter {
+    padding: 0 4px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    user-select: none;
+    white-space: nowrap;
+}
+.pdf-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* ===== 등급 필터 ===== */
 .grade-filter-panel { margin-bottom: 16px; }
 

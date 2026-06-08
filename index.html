@@ -287,13 +287,24 @@
                         </label>
                         <select id="indivExamSelect" class="selector"></select>
                     </div>
-                    <div class="control-right">
-                        <button id="pdfStudentBtn" class="pdf-btn">
-                            <i class="fas fa-file-pdf"></i> 개인 성적표 PDF
-                        </button>
-                        <button id="pdfClassBtn" class="pdf-btn">
-                            <i class="fas fa-file-pdf"></i> 학급 전체 PDF
-                        </button>
+                    <div class="control-right" style="width:100%; justify-content:space-between;">
+                        <div class="student-nav-group">
+                            <button id="prevStudentBtn" class="student-nav-btn" title="이전 학생">
+                                <i class="fas fa-chevron-left"></i> 이전 학생
+                            </button>
+                            <span id="studentNavCounter" class="student-nav-counter">- / -</span>
+                            <button id="nextStudentBtn" class="student-nav-btn" title="다음 학생">
+                                다음 학생 <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="pdf-btn-group">
+                            <button id="pdfStudentBtn" class="pdf-btn">
+                                <i class="fas fa-file-pdf"></i> 개인 성적표 PDF
+                            </button>
+                            <button id="pdfClassBtn" class="pdf-btn">
+                                <i class="fas fa-file-pdf"></i> 학급 전체 PDF
+                            </button>
+                        </div>
                     </div>
                 </div>
 
